@@ -12,16 +12,21 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v4
 
-      - name: Compiler l'APK avec Buildozer (peut prendre 20-40 minutes la première fois)
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          command: buildozer android debug
-          buildozer_version: stable
+      - name: Installer les dépendances système
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+
+      - name: Installer Buildozer
+        run: |
+          pip install --upgrade buildozer cython==0.29.36
+
+      - name: Compiler l'APK (accepte automatiquement les licences SDK ; 20-40 min la première fois)
+        run: |
+          yes | buildozer -v android debug
 
       - name: Mettre l'APK à disposition en téléchargement
         uses: actions/upload-artifact@v4
         with:
           name: atelier-vitrage-apk
-          path: ${{ steps.buildozer.outputs.filename }}
-  
+          path: bin/*.apk
