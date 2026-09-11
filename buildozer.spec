@@ -10,7 +10,7 @@ version = 1.0
 
 requirements = python3,kivy
 
-p4a.branch = 2026.5.9
+p4a.branch = stable
 
 orientation = landscape
 fullscreen = 0
