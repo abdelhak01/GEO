@@ -21,8 +21,12 @@ jobs:
         run: |
           pip install --upgrade buildozer cython==0.29.36
 
-      - name: Compiler l'APK (accepte automatiquement les licences SDK ; 20-40 min la première fois)
+      - name: Compiler l'APK (Java 17 requis par Gradle ; 20-40 min la première fois)
+        env:
+          JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
         run: |
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java -version
           yes | buildozer -v android debug
 
       - name: Mettre l'APK à disposition en téléchargement
