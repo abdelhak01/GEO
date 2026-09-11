@@ -8,7 +8,9 @@ source.include_exts = py
 
 version = 1.0
 
-requirements = python3==3.11.9,kivy
+requirements = python3,kivy
+
+p4a.branch = 2026.5.9
 
 orientation = landscape
 fullscreen = 0
