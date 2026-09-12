@@ -392,9 +392,37 @@ class AtelierVitrageRoot(BoxLayout):
         self.champ_ref.text = ""
 
     def exporter_dxf(self, panneau):
-        chemin = os.path.join(DOSSIER_EXPORT, f"{panneau['ref']}.dxf")
-        save_dxf(panneau["points"], panneau["rect"], panneau["ref"], chemin)
-        afficher_message("Export réussi", f"Fichier enregistré :\n{chemin}")
+        """Genere le DXF directement dans le dossier Telechargements
+        (visible depuis n'importe quel gestionnaire de fichiers, et via
+        cable USB depuis un PC), avec repli sur le dossier prive de
+        l'app si l'ecriture publique echoue."""
+        nom_fichier = f"{panneau['ref']}.dxf"
+
+        # 1) Tentative : dossier Telechargements public
+        try:
+            try:
+                from android.storage import primary_external_storage_path  # type: ignore
+                dossier_public = os.path.join(primary_external_storage_path(), "Download")
+            except Exception:
+                dossier_public = os.path.join(os.path.expanduser("~"), "Downloads")
+            os.makedirs(dossier_public, exist_ok=True)
+            chemin = os.path.join(dossier_public, nom_fichier)
+            save_dxf(panneau["points"], panneau["rect"], panneau["ref"], chemin)
+            afficher_message("Export réussi",
+                              f"{nom_fichier}\nenregistré dans le dossier\nTéléchargements de l'appareil.")
+            return
+        except Exception:
+            pass
+
+        # 2) Repli : dossier prive de l'application
+        chemin = os.path.join(DOSSIER_EXPORT, nom_fichier)
+        try:
+            save_dxf(panneau["points"], panneau["rect"], panneau["ref"], chemin)
+            afficher_message("Export réussi",
+                              f"{nom_fichier}\nenregistré ici :\n{chemin}")
+        except Exception:
+            afficher_message("Échec de l'export",
+                              "Impossible d'enregistrer le fichier.\nVérifie les autorisations de stockage\nde l'application.")
 
     def calculer_nesting(self):
         if not self.commande:
