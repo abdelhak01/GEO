@@ -73,6 +73,7 @@ def champ_saisie(**kwargs):
     return TextInput(background_color=COULEUR_FOND_CHAMP,
                       foreground_color=COULEUR_TEXTE_CHAMP,
                       cursor_color=COULEUR_CURSEUR,
+                      hint_text_color=(0.55, 0.60, 0.66, 1),
                       **kwargs)
 
 
@@ -272,7 +273,7 @@ class AtelierVitrageRoot(BoxLayout):
         for param in base["parametres"]:
             self.zone_cotes.add_widget(Label(text=param.replace("_", " "), size_hint_y=None,
                                               height=dp(48), font_size=dp(14)))
-            champ = champ_saisie(text="1000", multiline=False, input_filter="float",
+            champ = champ_saisie(text="", hint_text="mm", multiline=False, input_filter="float",
                                size_hint_y=None, height=dp(48), font_size=dp(16))
             champ.bind(text=lambda inst, val: self.rafraichir_apercu())
             self.zone_cotes.add_widget(champ)
@@ -327,18 +328,32 @@ class AtelierVitrageRoot(BoxLayout):
         return params
 
     def rafraichir_apercu(self, *args):
-        params = self._params_actuels()
-        if not is_valid(self.base_type, params):
-            self.label_erreur.text = "Cotes incohérentes : la forme ne peut pas se fermer."
-            return
-        self.label_erreur.text = ""
-        points = compute_polygon(self.base_type, params)
-        if self.base_type != "cercle" and self.arrondis:
-            points = appliquer_arrondis(points, self.arrondis)
-        rectiligne = float(self.champ_rectiligne.text or 0) if self.case_rectiligne.active else 0
-        points = offset_rectiligne(points, rectiligne)
-        rect = rectangle_marge(points, float(self.champ_marge.text or 0)) if self.case_marge.active else None
-        self.apercu.definir(points, rect)
+        """Recalcule et redessine l'apercu. Protege contre toute erreur
+        de saisie (champ vide, cotes incoherentes) : l'app affiche un
+        message au lieu de se fermer."""
+        try:
+            params = self._params_actuels()
+            # Aucune cote saisie encore : etat neutre, pas un message d'erreur
+            if all(v == 0 for v in params.values()):
+                self.label_erreur.text = "Saisis les cotes du gabarit."
+                self.apercu.definir([], None)
+                return
+            if not is_valid(self.base_type, params):
+                self.label_erreur.text = "Cotes incohérentes : vérifie les mesures saisies."
+                self.apercu.definir([], None)
+                return
+            self.label_erreur.text = ""
+            points = compute_polygon(self.base_type, params)
+            if self.base_type != "cercle" and self.arrondis:
+                points = appliquer_arrondis(points, self.arrondis)
+            rectiligne = float(self.champ_rectiligne.text or 0) if self.case_rectiligne.active else 0
+            points = offset_rectiligne(points, rectiligne)
+            marge = float(self.champ_marge.text or 0) if self.case_marge.active else 0
+            rect = rectangle_marge(points, marge) if self.case_marge.active else None
+            self.apercu.definir(points, rect)
+        except Exception as e:
+            self.label_erreur.text = "Saisie incomplète ou invalide."
+            self.apercu.definir([], None)
 
     def ajouter_commande(self):
         ref = self.champ_ref.text.strip()
@@ -347,7 +362,11 @@ class AtelierVitrageRoot(BoxLayout):
             afficher_message("Erreur", "Donne une référence au panneau.")
             return
         if not is_valid(self.base_type, params):
-            afficher_message("Erreur", "Cotes incohérentes, corrige avant d'ajouter.")
+            if any(v == 0 for v in params.values()):
+                afficher_message("Cotes manquantes",
+                                  "Toutes les cotes doivent être renseignées\navant d'ajouter le panneau.")
+            else:
+                afficher_message("Erreur", "Cotes incohérentes, corrige avant d'ajouter.")
             return
         points = compute_polygon(self.base_type, params)
         if self.base_type != "cercle" and self.arrondis:
