@@ -149,69 +149,96 @@ class AtelierVitrageRoot(BoxLayout):
         col_formes.add_widget(grille_formes)
         corps.add_widget(col_formes)
 
-        # ---- Colonne formulaire + apercu ----
-        col_form = BoxLayout(orientation="vertical", size_hint_x=0.4, padding=dp(8), spacing=dp(6))
-        corps.add_widget(col_form)
+        # ---- Colonne formulaire + apercu (defilable) ----
+        col_form_scroll = ScrollView(size_hint_x=0.4)
+        col_form = GridLayout(cols=1, size_hint_y=None, padding=dp(8), spacing=dp(8))
+        col_form.bind(minimum_height=col_form.setter("height"))
+        col_form_scroll.add_widget(col_form)
+        corps.add_widget(col_form_scroll)
 
-        col_form.add_widget(Label(text="Référence du panneau", size_hint_y=None, height=dp(24)))
-        self.champ_ref = TextInput(multiline=False, size_hint_y=None, height=dp(44))
+        col_form.add_widget(Label(text="Référence du panneau", size_hint_y=None, height=dp(28),
+                                   halign="left", font_size=dp(15)))
+        self.champ_ref = TextInput(multiline=False, size_hint_y=None, height=dp(48), font_size=dp(16))
         col_form.add_widget(self.champ_ref)
 
-        self.zone_cotes = GridLayout(cols=2, size_hint_y=None, spacing=dp(4))
+        col_form.add_widget(Label(text="Cotes (mm)", bold=True, size_hint_y=None, height=dp(30),
+                                   font_size=dp(15)))
+        self.zone_cotes = GridLayout(cols=2, size_hint_y=None, spacing=dp(6))
         self.zone_cotes.bind(minimum_height=self.zone_cotes.setter("height"))
         col_form.add_widget(self.zone_cotes)
 
         # arrondi de coin
-        col_form.add_widget(Label(text="Arrondi de coin (optionnel)", size_hint_y=None, height=dp(26)))
-        self.zone_arrondis = GridLayout(cols=1, size_hint_y=None, spacing=dp(4))
+        col_form.add_widget(Label(text="Arrondi de coin (optionnel)", bold=True, size_hint_y=None,
+                                   height=dp(30), font_size=dp(15)))
+        self.zone_arrondis = GridLayout(cols=1, size_hint_y=None, spacing=dp(6))
         self.zone_arrondis.bind(minimum_height=self.zone_arrondis.setter("height"))
         col_form.add_widget(self.zone_arrondis)
-        btn_add_arrondi = Button(text="+ Ajouter un arrondi", size_hint_y=None, height=dp(38))
+        btn_add_arrondi = Button(text="+ Ajouter un arrondi", size_hint_y=None, height=dp(46),
+                                  font_size=dp(15))
         btn_add_arrondi.bind(on_release=lambda inst: self.ajouter_arrondi())
         col_form.add_widget(btn_add_arrondi)
 
         # options
-        ligne_marge = BoxLayout(size_hint_y=None, height=dp(40))
-        self.case_marge = CheckBox(active=True, size_hint_x=None, width=dp(40))
+        col_form.add_widget(Label(text="Options", bold=True, size_hint_y=None, height=dp(30),
+                                   font_size=dp(15)))
+
+        ligne_marge = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(4))
+        self.case_marge = CheckBox(active=True, size_hint_x=None, width=dp(48))
+        self.case_marge.bind(active=lambda inst, val: self.rafraichir_apercu())
         ligne_marge.add_widget(self.case_marge)
-        ligne_marge.add_widget(Label(text="Marge de découpe (mm)"))
-        self.champ_marge = TextInput(text="40", multiline=False, input_filter="float")
+        ligne_marge.add_widget(Label(text="Marge découpe", font_size=dp(14)))
+        self.champ_marge = TextInput(text="40", multiline=False, input_filter="float",
+                                      size_hint_x=None, width=dp(90), font_size=dp(16))
+        self.champ_marge.bind(text=lambda inst, val: self.rafraichir_apercu())
         ligne_marge.add_widget(self.champ_marge)
         col_form.add_widget(ligne_marge)
 
-        ligne_rect = BoxLayout(size_hint_y=None, height=dp(40))
-        self.case_rectiligne = CheckBox(active=False, size_hint_x=None, width=dp(40))
+        ligne_rect = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(4))
+        self.case_rectiligne = CheckBox(active=False, size_hint_x=None, width=dp(48))
+        self.case_rectiligne.bind(active=lambda inst, val: self.rafraichir_apercu())
         ligne_rect.add_widget(self.case_rectiligne)
-        ligne_rect.add_widget(Label(text="Rectiligne (mm)"))
-        self.champ_rectiligne = TextInput(text="3", multiline=False, input_filter="float")
+        ligne_rect.add_widget(Label(text="Rectiligne", font_size=dp(14)))
+        self.champ_rectiligne = TextInput(text="3", multiline=False, input_filter="float",
+                                           size_hint_x=None, width=dp(90), font_size=dp(16))
+        self.champ_rectiligne.bind(text=lambda inst, val: self.rafraichir_apercu())
         ligne_rect.add_widget(self.champ_rectiligne)
         col_form.add_widget(ligne_rect)
 
-        self.apercu = ApercuForme(size_hint_y=1)
+        # apercu : hauteur FIXE (evite qu'il ecrase le reste de la colonne)
+        col_form.add_widget(Label(text="Aperçu", bold=True, size_hint_y=None, height=dp(30),
+                                   font_size=dp(15)))
+        self.apercu = ApercuForme(size_hint_y=None, height=dp(260))
         col_form.add_widget(self.apercu)
 
-        self.label_erreur = Label(text="", color=(0.9, 0.3, 0.2, 1), size_hint_y=None, height=dp(24))
+        self.label_erreur = Label(text="", color=(0.9, 0.3, 0.2, 1), size_hint_y=None,
+                                   height=dp(30), font_size=dp(13))
         col_form.add_widget(self.label_erreur)
 
-        btn_ajouter = Button(text="Ajouter à la commande", size_hint_y=None, height=dp(50),
-                              font_size=dp(16), background_color=(0.96, 0.62, 0.04, 1))
+        btn_ajouter = Button(text="Ajouter à la commande", size_hint_y=None, height=dp(56),
+                              font_size=dp(17), background_color=(0.96, 0.62, 0.04, 1))
         btn_ajouter.bind(on_release=lambda inst: self.ajouter_commande())
         col_form.add_widget(btn_ajouter)
 
-        # ---- Colonne commande ----
-        col_commande = BoxLayout(orientation="vertical", size_hint_x=0.25, padding=dp(8), spacing=dp(6))
-        corps.add_widget(col_commande)
-        col_commande.add_widget(Label(text="Commande", bold=True, size_hint_y=None, height=dp(30)))
-        self.liste_commande = GridLayout(cols=1, size_hint_y=None, spacing=dp(4))
-        self.liste_commande.bind(minimum_height=self.liste_commande.setter("height"))
-        scroll_commande = ScrollView()
-        scroll_commande.add_widget(self.liste_commande)
-        col_commande.add_widget(scroll_commande)
+        # ---- Colonne commande (defilable) ----
+        col_commande_scroll = ScrollView(size_hint_x=0.25)
+        col_commande = GridLayout(cols=1, size_hint_y=None, padding=dp(8), spacing=dp(8))
+        col_commande.bind(minimum_height=col_commande.setter("height"))
+        col_commande_scroll.add_widget(col_commande)
+        corps.add_widget(col_commande_scroll)
 
-        btn_nesting = Button(text="Calculer l'optimisation", size_hint_y=None, height=dp(46))
+        col_commande.add_widget(Label(text="Commande", bold=True, size_hint_y=None,
+                                       height=dp(34), font_size=dp(16)))
+        self.liste_commande = GridLayout(cols=1, size_hint_y=None, spacing=dp(6))
+        self.liste_commande.bind(minimum_height=self.liste_commande.setter("height"))
+        col_commande.add_widget(self.liste_commande)
+
+        btn_nesting = Button(text="Calculer l'optimisation", size_hint_y=None, height=dp(52),
+                              font_size=dp(15))
         btn_nesting.bind(on_release=lambda inst: self.calculer_nesting())
         col_commande.add_widget(btn_nesting)
-        self.label_nesting = Label(text="", size_hint_y=None, height=dp(100))
+        self.label_nesting = Label(text="", size_hint_y=None, height=dp(140), font_size=dp(13),
+                                    halign="left", valign="top")
+        self.label_nesting.bind(size=lambda inst, val: setattr(inst, "text_size", (inst.width, None)))
         col_commande.add_widget(self.label_nesting)
 
         self.choisir_forme(self.base_type)
@@ -225,9 +252,10 @@ class AtelierVitrageRoot(BoxLayout):
         self.arrondis = []
         self.zone_arrondis.clear_widgets()
         for param in base["parametres"]:
-            self.zone_cotes.add_widget(Label(text=param.replace("_", " "), size_hint_y=None, height=dp(36)))
+            self.zone_cotes.add_widget(Label(text=param.replace("_", " "), size_hint_y=None,
+                                              height=dp(48), font_size=dp(14)))
             champ = TextInput(text="1000", multiline=False, input_filter="float",
-                               size_hint_y=None, height=dp(36))
+                               size_hint_y=None, height=dp(48), font_size=dp(16))
             champ.bind(text=lambda inst, val: self.rafraichir_apercu())
             self.zone_cotes.add_widget(champ)
             self.champs_cotes[param] = champ
