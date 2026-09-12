@@ -14,7 +14,10 @@ import math
 # 1) CERCLE
 # =====================================================================
 def _points_cercle(p, n=48):
-    r = p["diametre"] / 2
+    d = p.get("diametre", 0)
+    if d <= 0:
+        return {"points": [(0, 0)] * 3, "valid": False}
+    r = d / 2
     pts = [(r + r * math.cos(2 * math.pi * i / n), r + r * math.sin(2 * math.pi * i / n)) for i in range(n)]
     return {"points": pts, "valid": True}
 
@@ -46,8 +49,16 @@ def _angle_from(origin, pt):
 def reconstruct_ngon(sides, diagonals):
     """sides : [S0..S(n-1)] longueurs des n côtés dans l'ordre.
     diagonals : [D0..D(n-4)] longueurs V0-V2, V0-V3, ..., V0-V(n-2).
-    Retourne (points, valid)."""
+    Retourne (points, valid).
+    Toute cote ou diagonale nulle/negative (ex. champ vide dans
+    l'interface) rend la forme invalide, sans planter."""
     n = len(sides)
+
+    # Garde-fou : une cote ou diagonale <= 0 n'a pas de sens
+    # geometriquement et provoquerait une division par zero.
+    if any(s <= 0 for s in sides) or any(d <= 0 for d in diagonals):
+        return [(0, 0)] * n, False
+
     V = [None] * n
     V[0] = (0, 0)
     V[1] = (sides[0], 0)
