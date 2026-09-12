@@ -59,6 +59,24 @@ os.makedirs(DOSSIER_EXPORT, exist_ok=True)
 
 
 # =====================================================================
+# Style commun des champs de saisie (theme sombre)
+# =====================================================================
+COULEUR_FOND_CHAMP = (0.16, 0.20, 0.26, 1)
+COULEUR_TEXTE_CHAMP = (1, 1, 1, 1)
+COULEUR_CURSEUR = (0.96, 0.62, 0.04, 1)
+
+
+def champ_saisie(**kwargs):
+    """TextInput pre-style pour le theme sombre (texte blanc sur fond
+    sombre) - evite de repeter les couleurs a chaque champ."""
+    kwargs.setdefault("multiline", False)
+    return TextInput(background_color=COULEUR_FOND_CHAMP,
+                      foreground_color=COULEUR_TEXTE_CHAMP,
+                      cursor_color=COULEUR_CURSEUR,
+                      **kwargs)
+
+
+# =====================================================================
 # Widget de dessin (aperçu de la forme, style "plan bleu")
 # =====================================================================
 class ApercuForme(Widget):
@@ -158,7 +176,7 @@ class AtelierVitrageRoot(BoxLayout):
 
         col_form.add_widget(Label(text="Référence du panneau", size_hint_y=None, height=dp(28),
                                    halign="left", font_size=dp(15)))
-        self.champ_ref = TextInput(multiline=False, size_hint_y=None, height=dp(48), font_size=dp(16))
+        self.champ_ref = champ_saisie(multiline=False, size_hint_y=None, height=dp(48), font_size=dp(16))
         col_form.add_widget(self.champ_ref)
 
         col_form.add_widget(Label(text="Cotes (mm)", bold=True, size_hint_y=None, height=dp(30),
@@ -187,7 +205,7 @@ class AtelierVitrageRoot(BoxLayout):
         self.case_marge.bind(active=lambda inst, val: self.rafraichir_apercu())
         ligne_marge.add_widget(self.case_marge)
         ligne_marge.add_widget(Label(text="Marge découpe", font_size=dp(14)))
-        self.champ_marge = TextInput(text="40", multiline=False, input_filter="float",
+        self.champ_marge = champ_saisie(text="40", multiline=False, input_filter="float",
                                       size_hint_x=None, width=dp(90), font_size=dp(16))
         self.champ_marge.bind(text=lambda inst, val: self.rafraichir_apercu())
         ligne_marge.add_widget(self.champ_marge)
@@ -198,7 +216,7 @@ class AtelierVitrageRoot(BoxLayout):
         self.case_rectiligne.bind(active=lambda inst, val: self.rafraichir_apercu())
         ligne_rect.add_widget(self.case_rectiligne)
         ligne_rect.add_widget(Label(text="Rectiligne", font_size=dp(14)))
-        self.champ_rectiligne = TextInput(text="3", multiline=False, input_filter="float",
+        self.champ_rectiligne = champ_saisie(text="3", multiline=False, input_filter="float",
                                            size_hint_x=None, width=dp(90), font_size=dp(16))
         self.champ_rectiligne.bind(text=lambda inst, val: self.rafraichir_apercu())
         ligne_rect.add_widget(self.champ_rectiligne)
@@ -254,7 +272,7 @@ class AtelierVitrageRoot(BoxLayout):
         for param in base["parametres"]:
             self.zone_cotes.add_widget(Label(text=param.replace("_", " "), size_hint_y=None,
                                               height=dp(48), font_size=dp(14)))
-            champ = TextInput(text="1000", multiline=False, input_filter="float",
+            champ = champ_saisie(text="1000", multiline=False, input_filter="float",
                                size_hint_y=None, height=dp(48), font_size=dp(16))
             champ.bind(text=lambda inst, val: self.rafraichir_apercu())
             self.zone_cotes.add_widget(champ)
@@ -272,8 +290,8 @@ class AtelierVitrageRoot(BoxLayout):
         self.arrondis.append(entree)
 
         ligne = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(4))
-        champ_coin = TextInput(text="1", multiline=False, input_filter="int", size_hint_x=0.3)
-        champ_rayon = TextInput(text="50", multiline=False, input_filter="float", size_hint_x=0.4)
+        champ_coin = champ_saisie(text="1", multiline=False, input_filter="int", size_hint_x=0.3)
+        champ_rayon = champ_saisie(text="50", multiline=False, input_filter="float", size_hint_x=0.4)
 
         def maj_coin(inst, val):
             try:
@@ -373,7 +391,7 @@ class AtelierVitrageRoot(BoxLayout):
 
 class AtelierVitrageApp(App):
     def build(self):
-        Window.clearcolor = (0.93, 0.94, 0.96, 1)
+        Window.clearcolor = (0.09, 0.12, 0.16, 1)
         return AtelierVitrageRoot()
 
 
