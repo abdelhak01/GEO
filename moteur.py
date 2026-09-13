@@ -13,15 +13,6 @@ import math
 # =====================================================================
 # 1) CERCLE
 # =====================================================================
-def _points_cercle(p, n=48):
-    d = p.get("diametre", 0)
-    if d <= 0:
-        return {"points": [(0, 0)] * 3, "valid": False}
-    r = d / 2
-    pts = [(r + r * math.cos(2 * math.pi * i / n), r + r * math.sin(2 * math.pi * i / n)) for i in range(n)]
-    return {"points": pts, "valid": True}
-
-
 # =====================================================================
 # 2) FORMES GENERIQUES N COTES (3 a 8) - cotes + diagonales depuis un
 #    sommet de reference. Verifie contre un polygone regulier connu
@@ -116,14 +107,11 @@ def _make_ngon_entry(n):
 # 3) CATALOGUE
 # =====================================================================
 BASES = {
-    "cercle": {"label": "Cercle", "categorie": "simple", "is_quad": False,
-               "parametres": ["diametre"], "compute": _points_cercle},
 }
 for _n in range(3, 9):
     BASES[f"ngon_{_n}"] = _make_ngon_entry(_n)
 
 CATEGORIES = {
-    "simple": "Formes géométriques simples",
     "mesure": "Formes par côtés mesurés (3 à 8 côtés)",
 }
 
@@ -252,6 +240,5 @@ def arrondi_valide(points, coin, rayon):
 
 
 if __name__ == "__main__":
-    print(compute_polygon("cercle", {"diametre": 1000})[:3], "...")
     print(compute_polygon("ngon_4", {"cote_1": 1000, "cote_2": 850, "cote_3": 980, "cote_4": 820, "diagonale_1": 1300}))
     print(is_valid("ngon_3", {"cote_1": 1000, "cote_2": 900, "cote_3": 700}))
