@@ -13,7 +13,7 @@ def _ligne(code, valeur):
     return f"{code}\n{valeur}\n"
 
 
-def build_dxf(shape_points, stock_rect_or_none, ref):
+def build_dxf(shape_points, stock_rect_or_none, ref, nom_projet=None, date_str=None):
     # --- Calcul des limites du dessin (pour HEADER) ---
     tous_points = list(shape_points)
     if stock_rect_or_none:
@@ -29,7 +29,7 @@ def build_dxf(shape_points, stock_rect_or_none, ref):
     out.append(_ligne(0, "SECTION"))
     out.append(_ligne(2, "HEADER"))
     out.append(_ligne(9, "$ACADVER"))
-    out.append(_ligne(1, "AC1009"))
+    out.append(_ligne(1, "AC1009"))          # DXF R12 : format tres largement supporte
     out.append(_ligne(9, "$INSBASE"))
     out.append(_ligne(10, "0.0")); out.append(_ligne(20, "0.0")); out.append(_ligne(30, "0.0"))
     out.append(_ligne(9, "$EXTMIN"))
@@ -37,7 +37,7 @@ def build_dxf(shape_points, stock_rect_or_none, ref):
     out.append(_ligne(9, "$EXTMAX"))
     out.append(_ligne(10, f"{max_x:.4f}")); out.append(_ligne(20, f"{max_y:.4f}")); out.append(_ligne(30, "0.0"))
     out.append(_ligne(9, "$INSUNITS"))
-    out.append(_ligne(70, 4))
+    out.append(_ligne(70, 4))                # 4 = millimetres
     out.append(_ligne(0, "ENDSEC"))
 
     # ================= SECTION TABLES (calques) =================
@@ -74,10 +74,12 @@ def build_dxf(shape_points, stock_rect_or_none, ref):
     out.append(_ligne(2, "ENTITIES"))
 
     def polyligne(points, calque):
+        """POLYLINE + VERTEX + SEQEND : format R12, compris par tous les
+        logiciels (LWPOLYLINE n'existe qu'a partir de R14)."""
         out.append(_ligne(0, "POLYLINE"))
         out.append(_ligne(8, calque))
         out.append(_ligne(66, 1))
-        out.append(_ligne(70, 1))
+        out.append(_ligne(70, 1))            # 1 = polyligne fermee
         out.append(_ligne(10, "0.0")); out.append(_ligne(20, "0.0")); out.append(_ligne(30, "0.0"))
         for x, y in points:
             out.append(_ligne(0, "VERTEX"))
@@ -95,13 +97,25 @@ def build_dxf(shape_points, stock_rect_or_none, ref):
     else:
         origine = (min_x + 10, min_y + 10)
 
-    out.append(_ligne(0, "TEXT"))
-    out.append(_ligne(8, "REPERE"))
-    out.append(_ligne(10, f"{origine[0]:.4f}"))
-    out.append(_ligne(20, f"{origine[1]:.4f}"))
-    out.append(_ligne(30, "0.0"))
-    out.append(_ligne(40, "25.0"))
-    out.append(_ligne(1, ref))
+    def texte(contenu, x, y, hauteur):
+        out.append(_ligne(0, "TEXT"))
+        out.append(_ligne(8, "REPERE"))
+        out.append(_ligne(10, f"{x:.4f}"))
+        out.append(_ligne(20, f"{y:.4f}"))
+        out.append(_ligne(30, "0.0"))
+        out.append(_ligne(40, f"{hauteur:.1f}"))
+        out.append(_ligne(1, contenu))
+
+    texte(ref, origine[0], origine[1], 25.0)
+
+    # Tracabilite : projet et date, en plus petit sous la reference
+    ligne_info = []
+    if nom_projet:
+        ligne_info.append(nom_projet)
+    if date_str:
+        ligne_info.append(date_str)
+    if ligne_info:
+        texte(" - ".join(ligne_info), origine[0], origine[1] - 32, 14.0)
 
     out.append(_ligne(0, "ENDSEC"))
     out.append(_ligne(0, "EOF"))
@@ -109,8 +123,18 @@ def build_dxf(shape_points, stock_rect_or_none, ref):
     return "".join(out)
 
 
-def save_dxf(shape_points, stock_rect_or_none, ref, chemin):
-    contenu = build_dxf(shape_points, stock_rect_or_none, ref)
+def save_dxf(shape_points, stock_rect_or_none, ref, chemin, nom_projet=None, date_str=None):
+    contenu = build_dxf(shape_points, stock_rect_or_none, ref, nom_projet, date_str)
     with open(chemin, "w", encoding="utf-8") as f:
         f.write(contenu)
     return chemin
+
+
+if __name__ == "__main__":
+    pts = [(0, 0), (1000, 0), (1000, 700), (0, 700)]
+    rect = [(-40, -40), (1040, -40), (1040, 740), (-40, 740)]
+    contenu = build_dxf(pts, rect, "test")
+    print(f"Taille : {len(contenu)} octets, {contenu.count(chr(10))} lignes")
+    print("Sections presentes :",
+          [s for s in ["HEADER", "TABLES", "ENTITIES"] if s in contenu])
+    
